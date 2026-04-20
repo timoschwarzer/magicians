@@ -1,0 +1,73 @@
+@import "tailwindcss";
+@import "@nuxt/ui";
+
+@theme static {
+    --font-sans: 'Public Sans', sans-serif;
+}
+
+@source inline("from-green-600 from-blue-600 from-red-600 from-yellow-600");
+
+.dark {
+    --ui-primary: white;
+    --ui-bg: #000000;
+}
+
+.slide-y-enter-active {
+    transition: opacity 0.2s ease-out, transform 0.2s ease-out;
+}
+
+.slide-y-leave-active {
+    transition: opacity 0.1s ease-out, transform 0.1s ease-out;
+}
+
+.slide-y-enter-from {
+    opacity: 0;
+    transform: translateY(6px);
+}
+
+.slide-y-leave-to {
+    opacity: 0;
+    transform: translateY(-6px);
+}
+
+.slide-x-enter-active,
+.slide-x-reverse-enter-active {
+    transition: opacity 0.2s ease-out, transform 0.2s ease-out;
+}
+
+.slide-x-leave-active,
+.slide-x-reverse-leave-active {
+    transition: opacity 0.1s ease-out, transform 0.1s ease-out;
+}
+
+.slide-x-enter-from {
+    opacity: 0;
+    transform: translateX(6px);
+}
+
+.slide-x-leave-to {
+    opacity: 0;
+    transform: translateX(-6px);
+}
+
+.slide-x-reverse-enter-from {
+    opacity: 0;
+    transform: translateX(-6px);
+}
+
+.slide-x-reverse-leave-to {
+    opacity: 0;
+    transform: translateX(6px);
+}
+
+.fade-enter-active,
+.fade-leave-active,
+.fade-reverse-enter-active,
+.fade-reverse-leave-active {
+    transition: opacity 0.2s;
+}
+
+.fade-enter-from,
+.fade-leave-to {
+    opacity: 0;
+}
