@@ -394,6 +394,8 @@ impl ApplicationState {
             games
                 .blocking_lock()
                 .retain(|_, game| game.blocking_lock().created_at > unix_time_2_weeks_ago)
-        });
+        })
+        .await
+        .expect("Error executing cleanup task");
     }
 }
