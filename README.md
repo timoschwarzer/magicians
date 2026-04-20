@@ -24,7 +24,7 @@ All players need a mobile device with internet access. While tablet devices work
 Press the **fullscreen button** in the bottom right corner of the interface to switch to fullscreen and prevent the device from turning off. Rotate your device to be in **landscape mode**.
 Players should place the device on the table **directly in front of them**. Each player's own prediction is displayed upside down on their device for everyone else to see.
 
-One player creates a game and shares the game link with everyone else. Players currently must join in clickwise order as there is no way to reorder players.
+One player creates a game and shares the game link with everyone else. Players currently must join in clockwise order as there is no way to reorder players.
 When everyone has joined, all players press the "Ready" button. The player who has a **cards icon** next to their name needs to deal cards.
 
 As soon as a trump color is revealed, select it at the bottom of the interface. After everyone submitted their prediction, play the game as usual and submit your win count at the end.
