@@ -62,7 +62,7 @@ async fn main() {
     let mut tasks = JoinSet::new();
 
     tasks.spawn(async move {
-        let mut interval = time::interval(Duration::from_secs(10));
+        let mut interval = time::interval(Duration::from_hours(24));
 
         loop {
             tokio::select! {
