@@ -21,6 +21,8 @@ pub async fn handler(State(state): State<ApplicationState>) -> Json<CreateGameRe
         .await
         .insert(uuid.clone(), Arc::new(Mutex::new(Game::new())));
 
+    tracing::info!("Game {}: Created", uuid);
+
     Json(CreateGameResponse {
         game_id: uuid,
     })

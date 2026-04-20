@@ -389,13 +389,16 @@ impl ApplicationState {
         tracing::debug!("Cleaning old games before: {}", unix_time_2_weeks_ago);
 
         let games = self.games.clone();
+        let game_count_before = games.lock().await.len();
 
-        tokio::task::spawn_blocking(move || {
-            games
-                .blocking_lock()
-                .retain(|_, game| game.blocking_lock().created_at > unix_time_2_weeks_ago)
+        let game_count_after = tokio::task::spawn_blocking(move || {
+            let mut games = games.blocking_lock();
+            games.retain(|_, game| game.blocking_lock().created_at > unix_time_2_weeks_ago);
+            games.len()
         })
         .await
         .expect("Error executing cleanup task");
+
+        tracing::info!("Purged games: {}, active games: {}", game_count_before - game_count_after, game_count_after);
     }
 }

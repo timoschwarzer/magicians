@@ -67,7 +67,7 @@ async fn main() {
         loop {
             tokio::select! {
                 _ = interval.tick() => {
-                    tracing::debug!("Cleaning up beacons");
+                    tracing::debug!("Cleaning up games");
                     application_state.clean_old_games().await;
                 }
                 _ = shutdown_signal() => {
