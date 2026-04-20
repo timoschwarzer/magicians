@@ -126,7 +126,10 @@ impl Game {
     }
 
     /// Add a player to this game with a given name
-    pub fn add_player<S: Into<String>>(&mut self, name: S) -> Result<(usize, String), GameLogicError> {
+    pub fn add_player<S: Into<String>>(
+        &mut self,
+        name: S,
+    ) -> Result<(usize, String), GameLogicError> {
         if self.has_started() {
             return Err(GameLogicError::GameAlreadyInProgress);
         }
@@ -184,7 +187,9 @@ impl Game {
             return Err(GameLogicError::InvalidInputNumber);
         }
 
-        if disallowed_prediction.is_some_and(|disallowed_prediction| prediction == disallowed_prediction) {
+        if disallowed_prediction
+            .is_some_and(|disallowed_prediction| prediction == disallowed_prediction)
+        {
             return Err(GameLogicError::InvalidInputNumber);
         }
 
@@ -201,11 +206,13 @@ impl Game {
                 player_index: next_player_index,
                 last_player_index,
                 // Make sure the last player cannot predict an amount that matches the total amount
-                disallowed_prediction: if next_player_index == last_player_index && sum_of_all_predictions <= round.get() {
+                disallowed_prediction: if next_player_index == last_player_index
+                    && sum_of_all_predictions <= round.get()
+                {
                     Some(round.get() - sum_of_all_predictions)
                 } else {
                     None
-                }
+                },
             };
         }
 
@@ -254,7 +261,9 @@ impl Game {
             return Ok(false);
         }
 
-        self.players.iter_mut().for_each(|p| p.ready_to_continue = false);
+        self.players
+            .iter_mut()
+            .for_each(|p| p.ready_to_continue = false);
 
         match self.state {
             GameState::Setup => {
@@ -264,7 +273,11 @@ impl Game {
                     last_player_index: self.get_last_player_index(NonZeroU8::new(1).unwrap()),
                 };
             }
-            GameState::Idle { round, last_player_index, .. } => {
+            GameState::Idle {
+                round,
+                last_player_index,
+                ..
+            } => {
                 self.state = GameState::Predicting {
                     round,
                     player_index: self.get_first_player_index(round),
