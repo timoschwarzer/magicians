@@ -14,7 +14,7 @@ permissions:
   packages: write
 
 jobs:
-  docker:
+  container-images:
     runs-on: ubuntu-latest
     steps:
       - name: Log in to the Container registry
