@@ -25,8 +25,8 @@
         </transition>
         <transition name="fade">
           <div
-              v-if="showBeginningPlayerMessage"
-              class="absolute z-10 inset-0 pointer-events-none flex items-center justify-center bg-white text-black text-2xl"
+            v-if="showBeginningPlayerMessage"
+            class="absolute z-10 inset-0 pointer-events-none flex items-center justify-center bg-white text-black text-2xl"
           >
             You start this round.
           </div>
@@ -57,14 +57,14 @@
             </div>
           </div>
           <div
-              v-else-if="game.state.type === 'Playing' || (game.state.type === 'Predicting' && player.prediction !== null)"
-              class="p-2 h-full flex flex-col justify-center items-center gap-3"
+            v-else-if="game.state.type === 'Playing' || (game.state.type === 'Predicting' && player.prediction !== null)"
+            class="p-2 h-full flex flex-col justify-center items-center gap-3"
           >
             <transition name="fade" mode="out-in">
               <div
-                  :key="player.prediction ?? -1"
-                  :class="{'rotate-180': game.state.type === 'Playing'}"
-                  class="transition-transform duration-500 flex justify-center items-center text-screen grow decoration-2 underline underline-offset-16"
+                :key="player.prediction ?? -1"
+                :class="{'rotate-180': game.state.type === 'Playing'}"
+                class="transition-transform duration-500 flex justify-center items-center text-screen grow decoration-2 underline underline-offset-16"
               >
                 {{ player.prediction }}
               </div>
@@ -135,11 +135,11 @@
                 </div>
 
                 <UButton
-                    :disabled="winCountInput === null"
-                    :color="winCountInput === null ? undefined : (winCountInput === player.prediction ? 'green' : 'red')"
-                    size="xl"
-                    icon="i-lucide-check"
-                    @click="submitWinCount"
+                  :disabled="winCountInput === null"
+                  :color="winCountInput === null ? undefined : (winCountInput === player.prediction ? 'green' : 'red')"
+                  size="xl"
+                  icon="i-lucide-check"
+                  @click="submitWinCount"
                 >
                   Submit
                 </UButton>
@@ -173,12 +173,22 @@
           </div>
         </transition>
       </template>
+      <template v-else>
+        <div class="h-full flex flex-col gap-2 justify-center items-center p-2">
+          You cannot join this game because it is already in progress.
+
+          <MGLeaderboard
+            v-if="game !== null"
+            :game="game"
+          />
+        </div>
+      </template>
     </div>
     <MGGameStatusBar
       :game="game"
       :player="player"
-      :can-signal-ready="game?.state?.type === 'Playing'"
-      :can-change-trump-color="game?.state?.type === 'Idle' || game?.state?.type === 'Predicting' || game?.state?.type === 'Playing'"
+      :can-signal-ready="playerIndex !== null && game?.state?.type === 'Playing'"
+      :can-change-trump-color="playerIndex !== null && (game?.state?.type === 'Idle' || game?.state?.type === 'Predicting' || game?.state?.type === 'Playing')"
       :signal-ready-label="game?.state?.type === 'Idle' ? 'I\'m ready to play' : 'Round Finished'"
       @change-prediction="changePrediction"
       @signal-ready="signalReady"
@@ -251,7 +261,7 @@
     return possibleWinCounts
   })
   const canJoin = computed(() => {
-    return game.value !== null && playerIndex.value === null
+    return game.value !== null && game.value.state.type === "Setup" && playerIndex.value === null
   })
   const previousPlayer = computed(() => {
     if (playerIndex.value === null || game.value === null || game.value.players.length < 2) {
