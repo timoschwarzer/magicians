@@ -46,6 +46,8 @@ pub enum GameState {
         round: NonZeroU8,
         /// The index of the player who is currently asked to submit their prediction
         player_index: usize,
+        /// The index of the player who starts predicting and playing
+        first_player_index: usize,
         /// The index of the player who predicts last
         last_player_index: usize,
         /// The value of the prediction which is not allowed to be submitted, or None if
@@ -56,6 +58,7 @@ pub enum GameState {
     Playing {
         /// The game round
         round: NonZeroU8,
+        first_player_index: usize,
     },
     /// State where players submit their win counts
     DistributingPoints {
@@ -171,6 +174,7 @@ impl Game {
         let GameState::Predicting {
             player_index: current_player_index,
             last_player_index,
+            first_player_index,
             round,
             disallowed_prediction,
             ..
@@ -196,7 +200,7 @@ impl Game {
         self.players[player_index].prediction = Some(prediction);
         self.players[player_index].ready_to_continue = true;
 
-        if !self.continue_if_everyone_is_ready()? {
+        if !self.continue_if_ready()? {
             let next_player_index = (player_index + 1) % self.players.len();
             let sum_of_all_predictions: u8 =
                 self.players.iter().map(|p| p.prediction.unwrap_or(0)).sum();
@@ -204,6 +208,7 @@ impl Game {
             self.state = GameState::Predicting {
                 round,
                 player_index: next_player_index,
+                first_player_index,
                 last_player_index,
                 // Make sure the last player cannot predict an amount that matches the total amount
                 disallowed_prediction: if next_player_index == last_player_index
@@ -255,18 +260,30 @@ impl Game {
         Ok(())
     }
 
-    /// Continue the game state to the next one when all players are ready
-    fn continue_if_everyone_is_ready(&mut self) -> Result<bool, GameLogicError> {
-        if !self.players.iter().all(|p| p.ready_to_continue) {
-            return Ok(false);
+    /**
+     * Continue the state machine if the current state is ready. The ready conditions vary between
+     * game states.
+     */
+    fn continue_if_ready(&mut self) -> Result<bool, GameLogicError> {
+        macro_rules! require_all_players_ready {
+            () => {
+                if !self.players.iter().all(|p| p.ready_to_continue) {
+                    return Ok(false);
+                }
+            };
         }
 
-        self.players
-            .iter_mut()
-            .for_each(|p| p.ready_to_continue = false);
+        macro_rules! require_one_player_ready {
+            ($player_index:expr) => {
+                if !self.players.get($player_index).map(|p| p.ready_to_continue).unwrap_or(false) {
+                    return Ok(false);
+                }
+            };
+        }
 
         match self.state {
             GameState::Setup => {
+                require_all_players_ready!();
                 self.state = GameState::Idle {
                     round: NonZeroU8::new(1).unwrap(),
                     first_player_index: self.get_first_player_index(NonZeroU8::new(1).unwrap()),
@@ -275,24 +292,30 @@ impl Game {
             }
             GameState::Idle {
                 round,
+                first_player_index,
                 last_player_index,
                 ..
             } => {
+                require_one_player_ready!(last_player_index);
                 self.state = GameState::Predicting {
                     round,
-                    player_index: self.get_first_player_index(round),
+                    player_index: first_player_index,
+                    first_player_index,
                     last_player_index,
                     disallowed_prediction: None,
                 };
             }
-            GameState::Predicting { round, .. } => {
-                self.state = GameState::Playing { round };
+            GameState::Predicting { round, first_player_index, .. } => {
+                require_all_players_ready!();
+                self.state = GameState::Playing { round, first_player_index };
             }
-            GameState::Playing { round } => {
+            GameState::Playing { round, .. } => {
+                require_all_players_ready!();
                 self.trump_color = None;
                 self.state = GameState::DistributingPoints { round };
             }
             GameState::DistributingPoints { round } => {
+                require_all_players_ready!();
                 self.players.iter_mut().for_each(|p| p.prediction = None);
 
                 let next_round = round.saturating_add(1);
@@ -305,6 +328,10 @@ impl Game {
                 };
             }
         };
+
+        self.players
+            .iter_mut()
+            .for_each(|p| p.ready_to_continue = false);
 
         Ok(true)
     }
@@ -334,7 +361,7 @@ impl Game {
         }
 
         player.ready_to_continue = true;
-        self.continue_if_everyone_is_ready()?;
+        self.continue_if_ready()?;
 
         Ok(())
     }
@@ -357,7 +384,7 @@ impl Game {
         };
 
         player.ready_to_continue = ready;
-        self.continue_if_everyone_is_ready()?;
+        self.continue_if_ready()?;
 
         Ok(())
     }

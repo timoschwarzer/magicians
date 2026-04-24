@@ -19,14 +19,21 @@
       </template>
       <template v-else-if="game !== null && playerIndex !== null && player !== null">
         <transition name="fade">
-          <div v-if="game.trumpColor !== null" :key="trumpUiColor" class="absolute inset-0 pointer-events-none">
-            <div :class="`from-${trumpUiColor}-600`" class="bg-linear-to-r absolute left-0 top-0 bottom-0  w-[40%]"></div>
-            <div :class="`from-${trumpUiColor}-600`" class="bg-linear-to-l absolute right-0 top-0 bottom-0  w-[40%]"></div>
+          <div v-if="game.trumpColor !== null" :key="trumpUiColor" class="-z-10 absolute inset-0 pointer-events-none">
+            <div :class="`from-${trumpUiColor}-600`" class="bg-linear-to-b absolute left-0 top-0 bottom-[33%] right-0"></div>
+          </div>
+        </transition>
+        <transition name="fade">
+          <div
+              v-if="showBeginningPlayerMessage"
+              class="absolute z-10 inset-0 pointer-events-none flex items-center justify-center bg-white text-black text-2xl"
+          >
+            You start this round.
           </div>
         </transition>
 
-        <template v-if="game.state.type === 'Setup'">
-          <div class="p-2 h-full flex flex-col justify-center items-center gap-3">
+        <transition name="slide-y" mode="out-in">
+          <div v-if="game.state.type === 'Setup'" key="Setup" class="p-2 h-full flex flex-col justify-center items-center gap-3">
             <div class="grid grid-cols-3 gap-6 text-2xl">
               <div v-if="nextPlayer !== null" class="flex items-center justify-end gap-1 pr-4 border-r opacity-75">
                 <UIcon name="i-lucide-arrow-left" />
@@ -46,109 +53,135 @@
             <div class="flex gap-1">
               <UButton v-if="canShare" icon="i-lucide-share-2" size="xl" @click="shareOrCopyLink">Share Link</UButton>
               <UButton v-else icon="i-lucide-copy" size="xl" @click="shareOrCopyLink">Copy Link</UButton>
-              <MGReadyButton :disabled="game.players.length < 2" :ready="selfIsReady" @signal-ready="onSignalReady" />
+              <MGReadyButton :disabled="game.players.length < 2" :ready="selfIsReady" @signal-ready="signalReady" />
             </div>
           </div>
-        </template>
-        <template v-if="game.state.type === 'Predicting'">
-          <div class="p-2 h-full flex flex-col justify-center items-center gap-3">
-            <template v-if="player.readyToContinue">
-              <div class="rotate-180 flex justify-center items-center text-screen grow">
-                {{ player.prediction }}
-              </div>
-            </template>
-            <template v-if="game.state.playerIndex === playerIndex">
-              <span>Predict how many times you will win:</span>
-
-              <div class="gap-2 text-2xl self-stretch flex justify-center flex-wrap">
-                <UButton
-                  v-for="i in possiblePredictions"
-                  :key="i"
-                  size="xl"
-                  :disabled="game.state.disallowedPrediction === i"
-                  class="w-12 px-4 text-2xl justify-center relative"
-                  :color="i === predictionInput ? 'info' : undefined"
-                  :variant="i === predictionInput ? 'solid' : 'subtle'"
-                  @click="predictionInput = i"
-                >
-                  {{ i }}
-
-                  <template v-if="game.state.disallowedPrediction === i">
-                    <div class="bg-red-600 h-1 w-full absolute rotate-45"></div>
-                    <div class="bg-red-600 h-1 w-full absolute -rotate-45"></div>
-                  </template>
-                </UButton>
-              </div>
-
-              <UButton :disabled="predictionInput === null" size="xl" icon="i-lucide-check" @click="submitPrediction">
-                Submit
-              </UButton>
-            </template>
-            <template v-else>
-              Waiting for {{ game.players[game.state.playerIndex]?.name ?? '???' }}...
-            </template>
-          </div>
-        </template>
-        <template v-if="game.state.type === 'Playing'">
-          <div class="h-full rotate-180 flex flex-col justify-center items-center grow">
-            <h2 class="text-2xl">Prediction:</h2>
+          <div
+              v-else-if="game.state.type === 'Playing' || (game.state.type === 'Predicting' && player.prediction !== null)"
+              class="p-2 h-full flex flex-col justify-center items-center gap-3"
+          >
             <transition name="fade" mode="out-in">
-              <div :key="player.prediction ?? -1" class="text-screen">
+              <div
+                  :key="player.prediction ?? -1"
+                  :class="{'rotate-180': game.state.type === 'Playing'}"
+                  class="transition-transform duration-500 flex justify-center items-center text-screen grow decoration-2 underline underline-offset-16"
+              >
                 {{ player.prediction }}
               </div>
             </transition>
+            <transition name="fade" mode="out-in">
+              <div v-if="game.state.type === 'Predicting'">
+                Waiting for {{ game.players[game.state.playerIndex]?.name ?? '???' }}...
+              </div>
+              <div v-else class="rotate-180">
+                Prediction:
+              </div>
+            </transition>
           </div>
-        </template>
-        <template v-if="game.state.type === 'DistributingPoints'">
-          <div class="p-2 h-full flex flex-col justify-center items-center gap-3">
-            <template v-if="player.readyToContinue">
-              Waiting for other players...
-            </template>
-            <template v-else>
-              <span>How many times did you win?</span>
+          <div v-else-if="game.state.type === 'Predicting'" key="Predicting" class="h-full">
+            <transition name="slide-y" mode="out-in">
+              <div v-if="game.state.playerIndex === playerIndex" class="p-2 h-full flex flex-col justify-center items-center gap-3">
+                <span>Predict how many times you will win:</span>
 
-              <div class="gap-2 text-2xl self-stretch flex justify-center flex-wrap">
-                <UButton
-                  v-for="i in possibleWinCounts"
-                  :key="i"
-                  size="xl"
-                  class="w-12 px-4 text-2xl justify-center underline-offset-4 decoration-zinc-700"
-                  :class="{'underline': i === player.prediction}"
-                  :variant="i === winCountInput ? 'solid' : 'subtle'"
-                  @click="winCountInput = i"
-                >
-                  {{ i }}
+                <div class="gap-2 text-2xl self-stretch flex justify-center flex-wrap">
+                  <UButton
+                      v-for="i in possiblePredictions"
+                      :key="i"
+                      size="xl"
+                      :disabled="game.state.disallowedPrediction === i"
+                      class="w-12 px-4 text-2xl justify-center relative"
+                      :color="i === predictionInput ? 'info' : undefined"
+                      :variant="i === predictionInput ? 'solid' : 'subtle'"
+                      @click="predictionInput = i"
+                  >
+                    {{ i }}
+
+                    <template v-if="game.state.disallowedPrediction === i">
+                      <div class="bg-red-600 h-1 w-full absolute rotate-45"></div>
+                      <div class="bg-red-600 h-1 w-full absolute -rotate-45"></div>
+                    </template>
+                  </UButton>
+                </div>
+
+                <UButton :disabled="predictionInput === null" size="xl" icon="i-lucide-check" @click="submitPrediction">
+                  Submit
                 </UButton>
               </div>
+              <div v-else class="p-2 h-full flex justify-center items-center">
+                Waiting for {{ game.players[game.state.playerIndex]?.name ?? '???' }}...
+              </div>
+            </transition>
+          </div>
+          <div v-else-if="game.state.type === 'DistributingPoints'" key="DistributingPoints" class="h-full">
+            <transition name="slide-y" mode="out-in">
+              <div v-if="player.readyToContinue" class="p-2 h-full flex justify-center items-center">
+                Waiting for other players...
+              </div>
+              <div v-else class="p-2 h-full flex flex-col justify-center items-center gap-3">
+                <span>How many times did you win?</span>
 
-              <UButton
-                :disabled="winCountInput === null"
-                :color="winCountInput === null ? undefined : (winCountInput === player.prediction ? 'green' : 'red')"
-                size="xl"
-                icon="i-lucide-check"
-                @click="submitWinCount"
-              >
-                Submit
-              </UButton>
-            </template>
+                <div class="gap-2 text-2xl self-stretch flex justify-center flex-wrap">
+                  <UButton
+                      v-for="i in possibleWinCounts"
+                      :key="i"
+                      size="xl"
+                      class="w-12 px-4 text-2xl justify-center underline-offset-4 decoration-zinc-700"
+                      :class="{'underline': i === player.prediction}"
+                      :variant="i === winCountInput ? 'solid' : 'subtle'"
+                      @click="winCountInput = i"
+                  >
+                    {{ i }}
+                  </UButton>
+                </div>
+
+                <UButton
+                    :disabled="winCountInput === null"
+                    :color="winCountInput === null ? undefined : (winCountInput === player.prediction ? 'green' : 'red')"
+                    size="xl"
+                    icon="i-lucide-check"
+                    @click="submitWinCount"
+                >
+                  Submit
+                </UButton>
+              </div>
+            </transition>
           </div>
-        </template>
-        <template v-if="game.state.type === 'Idle'">
-          <div class="p-2 h-full relative flex flex-col justify-center items-center gap-3 overflow-y-auto">
-            <h2 class="text-3xl">Round {{ game.state.round }}</h2>
-            <MGLeaderboard :game="game" :highlight-index="playerIndex" :give-cards-index="game.state.lastPlayerIndex" />
+          <div v-else-if="game.state.type === 'Idle'" key="Idle" class="grid h-full auto-cols-fr">
+            <div class="p-2 relative flex flex-col justify-center items-center gap-3 overflow-y-auto">
+              <h2 class="text-3xl">Round {{ game.state.round }}</h2>
+              <MGLeaderboard :game="game" :highlight-index="playerIndex" :give-cards-index="game.state.lastPlayerIndex" />
+            </div>
+            <div v-if="playerIndex === game.state.lastPlayerIndex" class="col-2 p-2 relative flex flex-col justify-center items-center gap-3 overflow-y-auto">
+              <div>
+                You have to deal <strong>{{ game.state.round }} card<template v-if="game.state.round !== 1">s</template></strong>.
+              </div>
+
+              <UButton @click="cardsDealtDialogOpen = true">Continue</UButton>
+
+              <UModal v-model:open="cardsDealtDialogOpen" title="Select Trump Color">
+                <template #body>
+                  <div class="gap-2 grid grid-flow-col auto-cols-fr">
+                    <UButton @click="setTrumpColorAndContinue('Blue')" color="blue">Blue</UButton>
+                    <UButton @click="setTrumpColorAndContinue('Green')" color="green">Green</UButton>
+                    <UButton @click="setTrumpColorAndContinue('Red')" color="red">Red</UButton>
+                    <UButton @click="setTrumpColorAndContinue('Yellow')" color="yellow">Yellow</UButton>
+                    <UButton @click="setTrumpColorAndContinue(null)" variant="subtle">None</UButton>
+                  </div>
+                </template>
+              </UModal>
+            </div>
           </div>
-        </template>
+        </transition>
       </template>
     </div>
     <MGGameStatusBar
       :game="game"
       :player="player"
-      :can-signal-ready="game?.state?.type === 'Idle' || game?.state?.type === 'Playing'"
+      :can-signal-ready="game?.state?.type === 'Playing'"
       :can-change-trump-color="game?.state?.type === 'Idle' || game?.state?.type === 'Predicting' || game?.state?.type === 'Playing'"
-      :signal-ready-label="game?.state?.type === 'Idle' ? 'I\'m ready to play' : 'Finish Round'"
+      :signal-ready-label="game?.state?.type === 'Idle' ? 'I\'m ready to play' : 'Round Finished'"
       @change-prediction="changePrediction"
-      @signal-ready="onSignalReady"
+      @signal-ready="signalReady"
       @change-trump-color="setTrumpColor"
     />
   </div>
@@ -180,7 +213,10 @@
   const wsReconnectTimeoutId = ref<number | null>(null)
   const predictionInput = ref<number | null>(null)
   const winCountInput = ref<number | null>(null)
-  const nameInput = ref<string>("")
+  const nameInput = ref("")
+  const cardsDealtDialogOpen = ref(false)
+  const showBeginningPlayerMessage = ref(false)
+  const canShare = ref(typeof window.navigator.share === "function")
 
   const player = computed(() => {
     if (game.value === null || playerIndex.value === null) {
@@ -191,12 +227,6 @@
   })
   const selfIsReady = computed(() => {
     return player.value?.readyToContinue ?? false
-  })
-  const playerCount = computed(() => {
-    return game.value?.players?.length ?? 0
-  })
-  const playersReady = computed(() => {
-    return game.value?.players?.filter(p => p.readyToContinue)?.length ?? 0
   })
   const possiblePredictions = computed(() => {
     if (game.value === null || game.value.state.type !== "Predicting") {
@@ -251,10 +281,21 @@
         return undefined
     }
   })
-  const canShare = ref(typeof window.navigator.share === "function")
 
-  watch(() => game.value?.state?.type, (newState) => {
-    switch (newState) {
+  watch(() => game.value?.state?.type, (newV, oldV) => {
+    console.log(newV, oldV)
+
+    switch (game.value?.state?.type) {
+      case "Playing":
+        cardsDealtDialogOpen.value = false
+
+        if (playerIndex.value === game.value.state.firstPlayerIndex) {
+          setTimeout(() => {
+            showBeginningPlayerMessage.value = true
+            setTimeout(() => showBeginningPlayerMessage.value = false, 2000)
+          }, 1000)
+        }
+        break
       case "Predicting":
         predictionInput.value = null
         break
@@ -339,7 +380,7 @@
     })
   }
 
-  function onSignalReady(ready: boolean) {
+  function signalReady(ready: boolean) {
     sendCommand({
       type: "SignalReady",
       ready,
@@ -372,6 +413,11 @@
       type: "SetTrumpColor",
       trumpColor: to,
     })
+  }
+
+  function setTrumpColorAndContinue(to: MG.CardColor | null) {
+    setTrumpColor(to)
+    signalReady(true)
   }
 
   function join() {

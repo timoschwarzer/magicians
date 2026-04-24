@@ -30,11 +30,13 @@ export namespace MG {
         type: "Predicting",
         round: number,
         playerIndex: number,
+        firstPlayerIndex: number,
         lastPlayerIndex: number,
         disallowedPrediction: number | null,
     } | {
         type: "Playing",
         round: number,
+        firstPlayerIndex: number,
     } | {
         type: "DistributingPoints",
         round: number,
