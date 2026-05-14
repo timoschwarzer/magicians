@@ -56,59 +56,66 @@
               <MGReadyButton :disabled="game.players.length < 2" :ready="selfIsReady" @signal-ready="signalReady" />
             </div>
           </div>
-          <div
-            v-else-if="game.state.type === 'Playing' || (game.state.type === 'Predicting' && player.prediction !== null)"
-            class="p-2 h-full flex flex-col justify-center items-center gap-3"
-          >
-            <transition name="fade" mode="out-in">
-              <div
-                :key="player.prediction ?? -1"
-                :class="{'rotate-180': game.state.type === 'Playing'}"
-                class="transition-transform duration-500 flex justify-center items-center text-screen grow decoration-2 underline underline-offset-16"
-              >
-                {{ player.prediction }}
-              </div>
-            </transition>
-            <transition name="fade" mode="out-in">
-              <div v-if="game.state.type === 'Predicting'">
-                Waiting for {{ game.players[game.state.playerIndex]?.name ?? '???' }}...
-              </div>
-              <div v-else class="rotate-180">
-                Prediction:
-              </div>
-            </transition>
-          </div>
-          <div v-else-if="game.state.type === 'Predicting'" key="Predicting" class="h-full">
+          <div v-else-if="game.state.type === 'Predicting' || game.state.type === 'Playing'" class="h-full grid auto-cols-auto gap-1">
+            <div class="flex justify-center items-center col-1">
+              <MGPredictions :game="game" :highlight-index="game.state.playerIndex" />
+            </div>
             <transition name="slide-y" mode="out-in">
-              <div v-if="game.state.playerIndex === playerIndex" class="p-2 h-full flex flex-col justify-center items-center gap-3">
-                <span>Predict how many times you will win:</span>
-
-                <div class="gap-2 text-2xl self-stretch flex justify-center flex-wrap">
-                  <UButton
-                      v-for="i in possiblePredictions"
-                      :key="i"
-                      size="xl"
-                      :disabled="game.state.disallowedPrediction === i"
-                      class="w-12 px-4 text-2xl justify-center relative"
-                      :color="i === predictionInput ? 'info' : undefined"
-                      :variant="i === predictionInput ? 'solid' : 'subtle'"
-                      @click="predictionInput = i"
+              <div
+                v-if="game.state.type === 'Playing' || (game.state.type === 'Predicting' && player.prediction !== null)"
+                class="p-2 h-full flex flex-col justify-center items-center gap-3 col-2 overflow-hidden"
+              >
+                <transition name="fade" mode="out-in">
+                  <div
+                    :key="player.prediction ?? -1"
+                    :class="{'rotate-180': game.state.type === 'Playing'}"
+                    class="transition-transform duration-500 flex justify-center items-center text-screen grow decoration-2 underline underline-offset-16"
                   >
-                    {{ i }}
-
-                    <template v-if="game.state.disallowedPrediction === i">
-                      <div class="bg-red-600 h-1 w-full absolute rotate-45"></div>
-                      <div class="bg-red-600 h-1 w-full absolute -rotate-45"></div>
-                    </template>
-                  </UButton>
-                </div>
-
-                <UButton :disabled="predictionInput === null" size="xl" icon="i-lucide-check" @click="submitPrediction">
-                  Submit
-                </UButton>
+                    {{ player.prediction }}
+                  </div>
+                </transition>
+                <transition name="fade" mode="out-in">
+                  <div v-if="game.state.type === 'Predicting'">
+                    Waiting for {{ game.players[game.state.playerIndex]?.name ?? '???' }}...
+                  </div>
+                  <div v-else class="rotate-180">
+                    Prediction:
+                  </div>
+                </transition>
               </div>
-              <div v-else class="p-2 h-full flex justify-center items-center">
-                Waiting for {{ game.players[game.state.playerIndex]?.name ?? '???' }}...
+              <div v-else key="Predicting" class="h-full col-2">
+                <transition name="slide-y" mode="out-in">
+                  <div v-if="game.state.playerIndex === playerIndex" class="p-2 h-full flex flex-col justify-center items-center gap-3">
+                    <span>Predict how many times you will win:</span>
+
+                    <div class="gap-2 text-2xl self-stretch flex justify-center flex-wrap">
+                      <UButton
+                        v-for="i in possiblePredictions"
+                        :key="i"
+                        size="xl"
+                        :disabled="game.state.disallowedPrediction === i"
+                        class="w-12 px-4 text-2xl justify-center relative"
+                        :color="i === predictionInput ? 'info' : undefined"
+                        :variant="i === predictionInput ? 'solid' : 'subtle'"
+                        @click="predictionInput = i"
+                      >
+                        {{ i }}
+
+                        <template v-if="game.state.disallowedPrediction === i">
+                          <div class="bg-red-600 h-1 w-full absolute rotate-45"></div>
+                          <div class="bg-red-600 h-1 w-full absolute -rotate-45"></div>
+                        </template>
+                      </UButton>
+                    </div>
+
+                    <UButton :disabled="predictionInput === null" size="xl" icon="i-lucide-check" @click="submitPrediction">
+                      Submit
+                    </UButton>
+                  </div>
+                  <div v-else class="p-2 h-full flex justify-center items-center">
+                    Waiting for {{ game.players[game.state.playerIndex]?.name ?? '???' }}...
+                  </div>
+                </transition>
               </div>
             </transition>
           </div>
@@ -122,13 +129,13 @@
 
                 <div class="gap-2 text-2xl self-stretch flex justify-center flex-wrap">
                   <UButton
-                      v-for="i in possibleWinCounts"
-                      :key="i"
-                      size="xl"
-                      class="w-12 px-4 text-2xl justify-center underline-offset-4 decoration-zinc-700"
-                      :class="{'underline': i === player.prediction}"
-                      :variant="i === winCountInput ? 'solid' : 'subtle'"
-                      @click="winCountInput = i"
+                    v-for="i in possibleWinCounts"
+                    :key="i"
+                    size="xl"
+                    class="w-12 px-4 text-2xl justify-center underline-offset-4 decoration-zinc-700"
+                    :class="{'underline': i === player.prediction}"
+                    :variant="i === winCountInput ? 'solid' : 'subtle'"
+                    @click="winCountInput = i"
                   >
                     {{ i }}
                   </UButton>
