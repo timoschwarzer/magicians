@@ -77,14 +77,6 @@
                     {{ player.prediction }}
                   </div>
                 </transition>
-                <transition name="fade" mode="out-in">
-                  <div v-if="game.state.type === 'Predicting'">
-                    Waiting for {{ game.players[game.state.playerIndex]?.name ?? '???' }}...
-                  </div>
-                  <div v-else class="rotate-180">
-                    Prediction:
-                  </div>
-                </transition>
               </div>
               <div v-else key="Predicting" class="h-full col-2">
                 <transition name="slide-y" mode="out-in">
