@@ -10,6 +10,10 @@ export default defineNuxtConfig({
       websocket: true,
     },
   },
+  colorMode: {
+    preference: "dark",
+    storageKey: "color-mode",
+  },
   ui: {
     theme: {
       colors: ['primary', 'secondary', 'info', 'success', 'warning', 'error', 'neutral', 'green', 'blue', 'red', 'yellow']
