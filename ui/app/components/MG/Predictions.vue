@@ -9,7 +9,7 @@
         <div class="col-start-3 flex items-center pr-1">
           <UIcon name="i-lucide-crown" />
         </div>
-        <div class="col-start-4 relative">
+        <div class="col-start-4 relative text-center">
           <NumberFlow class="transition-opacity" :class="{'opacity-0': player.prediction === null}" :value="player.prediction ?? 0"/>
           <div class="text-center transition-opacity absolute inset-0" :class="{'opacity-0': player.prediction !== null}">-</div>
         </div>
