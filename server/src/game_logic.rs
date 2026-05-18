@@ -22,6 +22,8 @@ pub struct Player {
     prediction: Option<u8>,
     /** The player's points */
     points: i32,
+    /** Points gained (or lost when negative) in the last round */
+    points_delta: Option<i32>,
     /** Whether this player is ready to continue */
     ready_to_continue: bool,
 }
@@ -144,6 +146,7 @@ impl Game {
             name: name.into(),
             prediction: None,
             points: 0,
+            points_delta: None,
             ready_to_continue: false,
         });
 
@@ -312,6 +315,7 @@ impl Game {
             GameState::Playing { round, .. } => {
                 require_all_players_ready!();
                 self.trump_color = None;
+                self.players.iter_mut().for_each(|p| p.points_delta = None);
                 self.state = GameState::DistributingPoints { round };
             }
             GameState::DistributingPoints { round } => {
@@ -354,11 +358,14 @@ impl Game {
             return Err(GameLogicError::NotPossibleInCurrentGameState);
         };
 
-        if win_count == player.prediction.unwrap_or(0) {
-            player.points += 20 + player.prediction.unwrap_or(0) as i32 * 10;
+        let points_delta = if win_count == player.prediction.unwrap_or(0) {
+            20 + player.prediction.unwrap_or(0) as i32 * 10
         } else {
-            player.points -= win_count.abs_diff(player.prediction.unwrap_or(0)) as i32 * 10;
-        }
+            win_count.abs_diff(player.prediction.unwrap_or(0)) as i32 * -10
+        };
+
+        player.points_delta = Some(points_delta);
+        player.points += points_delta;
 
         player.ready_to_continue = true;
         self.continue_if_ready()?;

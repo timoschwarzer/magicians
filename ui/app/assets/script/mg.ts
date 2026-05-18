@@ -14,6 +14,7 @@ export namespace MG {
         name: string,
         prediction: number | null,
         points: number,
+        pointsDelta: number | null,
         readyToContinue: boolean,
     }
 
