@@ -56,9 +56,12 @@
               <MGReadyButton :disabled="game.players.length < 2" :ready="selfIsReady" @signal-ready="signalReady" />
             </div>
           </div>
-          <div v-else-if="game.state.type === 'Predicting' || game.state.type === 'Playing'" class="h-full grid auto-cols-auto gap-1">
-            <div class="flex justify-center items-center col-1">
-              <MGPredictions :game="game" :highlight-index="game.state.playerIndex" />
+          <div v-else-if="game.state.type === 'Predicting' || game.state.type === 'Playing'" class="h-full grid grid-cols-[1fr_3fr] gap-1">
+            <div class="flex justify-center items-center col-1 px-4">
+              <MGPredictions
+                :game="game"
+                :highlight-index="game.state.type === 'Predicting' ? game.state.playerIndex : undefined"
+              />
             </div>
             <transition name="slide-y" mode="out-in">
               <div
@@ -85,7 +88,7 @@
               </div>
               <div v-else key="Predicting" class="h-full col-2">
                 <transition name="slide-y" mode="out-in">
-                  <div v-if="game.state.playerIndex === playerIndex" class="p-2 h-full flex flex-col justify-center items-center gap-3">
+                  <div v-if="game.state.playerIndex === playerIndex" class="p-2 mx-4 h-full flex flex-col justify-center items-center gap-3 text-center">
                     <span>Predict how many times you will win:</span>
 
                     <div class="gap-2 text-2xl self-stretch flex justify-center flex-wrap">
