@@ -56,7 +56,7 @@
               <MGReadyButton :disabled="game.players.length < 2" :ready="selfIsReady" @signal-ready="signalReady" />
             </div>
           </div>
-          <div v-else-if="game.state.type === 'Predicting' || game.state.type === 'Playing'" class="h-full grid grid-cols-[1fr_3fr] gap-1">
+          <div v-else-if="game.state.type === 'Predicting' || game.state.type === 'Playing'" class="h-full grid grid-cols-[1fr_2fr] gap-1">
             <div class="flex justify-center items-center col-1 px-4">
               <MGPredictions
                 :game="game"
