@@ -69,6 +69,7 @@
   import type {SelectItem} from "@nuxt/ui/components/Select.vue"
   import NumberFlow from "@number-flow/vue"
   import type {DropdownMenuItem} from "@nuxt/ui/components/DropdownMenu.vue"
+  import {useScreenOrientation} from "@vueuse/core"
 
   const props = defineProps<{
     game: MG.Game | null,
@@ -83,6 +84,8 @@
     (on: "changeTrumpColor", color: MG.CardColor | null): void,
     (on: "changePrediction", prediction: number): void,
   }>()
+
+  const screenOrientation = useScreenOrientation()
 
   const fullscreenButtonVisible = ref(false)
   const wakeLockSentinel = shallowRef<WakeLockSentinel | null>(null)
@@ -146,7 +149,16 @@
   })
 
   function updateFullscreenButtonVisibility() {
-    fullscreenButtonVisible.value = document.fullscreenEnabled && document.fullscreenElement === null
+    const fullScreenEnabled = !document.fullscreenEnabled || document.fullscreenElement !== null
+    fullscreenButtonVisible.value = !fullScreenEnabled
+
+    if (screenOrientation.isSupported.value) {
+      try {
+        screenOrientation.unlockOrientation()
+      } catch (e) {
+        console.error("Failed to unlock screen orientation: ", e)
+      }
+    }
   }
 
   onMounted(() => {
@@ -171,6 +183,16 @@
       wakeLockSentinel.value = await navigator.wakeLock.request("screen")
     } catch (e) {
       console.error("Failed to acquire wakelock: ", e)
+    }
+
+    if (screenOrientation.isSupported.value) {
+      try {
+        await screenOrientation.lockOrientation("landscape")
+      } catch (e) {
+        console.error("Failed to lock screen orientation: ", e)
+      }
+    } else {
+      console.warn("Screen orientation API is not supported")
     }
   }
 </script>
