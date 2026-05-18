@@ -11,7 +11,7 @@
     <div v-if="canChangeTrumpColor" class="flex">
       <USelect
         :model-value="game?.trumpColor ?? null"
-        @update:modelValue="color => emit('changeTrumpColor', color as MG.CardColor | null)"
+        @update:modelValue="(color: MG.CardColor | null) => emit('changeTrumpColor', color as MG.CardColor | null)"
         :items="trumpItems"
         class="rounded-none"
         variant="none"
@@ -194,6 +194,12 @@
     } else {
       console.warn("Screen orientation API is not supported")
     }
+
+    // Workaround for the issue that the viewport size changes instantly after
+    // going full screen in Chrome, which hides the bottom toolbar *sometimes*.
+    setTimeout(() => {
+      window.scrollTo({top: 0, left: 0, behavior: "instant"})
+    }, 100)
   }
 </script>
 
