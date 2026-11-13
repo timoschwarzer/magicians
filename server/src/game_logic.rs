@@ -146,7 +146,7 @@ impl Game {
             key: key.clone(),
             name: name.into(),
             prediction: None,
-            points: vec![10, 30, 50, -20],
+            points: vec![],
             ready_to_continue: false,
         });
 
