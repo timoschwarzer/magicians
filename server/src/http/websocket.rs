@@ -1,21 +1,21 @@
+use crate::game_logic::{ApplicationState, Game, GameLogicError, PlayerId};
 use crate::protocol::{WebSocketCommand, WebSocketNotification};
-use crate::game_logic::{ApplicationState, Game, GameLogicError};
 use axum::extract::ws::CloseFrame;
 use axum::extract::{Path, State, WebSocketUpgrade, ws};
 use axum::http::Version;
 use axum::response::Response;
-use std::ops::DerefMut;
 use serde::Serialize;
+use std::ops::DerefMut;
 use uuid::Uuid;
 
 fn handle_game_command(
     game: &mut Game,
-    player_index: usize,
+    player_id: PlayerId,
     command: WebSocketCommand,
 ) -> Result<(), GameLogicError> {
     match command {
         WebSocketCommand::SignalReady { ready } => {
-            game.signal_player_ready(player_index, ready)?;
+            game.signal_player_ready(player_id, ready)?;
             game.broadcast_state();
         }
         WebSocketCommand::SetTrumpColor { trump_color } => {
@@ -23,15 +23,19 @@ fn handle_game_command(
             game.broadcast_state();
         }
         WebSocketCommand::SubmitPrediction { prediction } => {
-            game.submit_prediction(player_index, prediction)?;
+            game.submit_prediction(player_id, prediction)?;
             game.broadcast_state();
         }
         WebSocketCommand::ChangePrediction { prediction } => {
-            game.change_prediction(player_index, prediction)?;
+            game.change_prediction(player_id, prediction)?;
             game.broadcast_state();
         }
         WebSocketCommand::SubmitWinCount { win_count } => {
-            game.submit_win_count(player_index, win_count)?;
+            game.submit_win_count(player_id, win_count)?;
+            game.broadcast_state();
+        }
+        WebSocketCommand::ShiftPlayerPosition { shift } => {
+            game.shift_player_position(player_id, shift)?;
             game.broadcast_state();
         }
         _ => {}
@@ -40,30 +44,27 @@ fn handle_game_command(
     Ok(())
 }
 
-
 #[derive(Serialize)]
 #[serde(rename_all_fields = "camelCase")]
 enum AuthenticationCommandResult {
     MaybeAuthenticated,
-    Joined {
-        key: String,
-    },
+    Joined { key: String },
 }
 
 fn handle_authentication_command(
     game: &mut Game,
-    player_index: &mut Option<usize>,
+    player_id: &mut Option<PlayerId>,
     command: WebSocketCommand,
 ) -> Result<AuthenticationCommandResult, GameLogicError> {
     match command {
         WebSocketCommand::Authenticate { key } => {
-            *player_index = game.get_player_index_by_key(&key);
+            *player_id = game.get_player_id_by_key(&key);
         }
         WebSocketCommand::Join { name } => {
             let (index, key) = game.add_player(name)?;
-            *player_index = Some(index);
+            *player_id = Some(index);
             game.broadcast_state();
-            return Ok(AuthenticationCommandResult::Joined {key});
+            return Ok(AuthenticationCommandResult::Joined { key });
         }
         _ => {}
     }
@@ -105,7 +106,7 @@ pub async fn handler(
             return;
         }
 
-        let mut player_index: Option<usize> = None;
+        let mut player_id: Option<usize> = None;
 
         loop {
             tokio::select! {
@@ -119,10 +120,10 @@ pub async fn handler(
                             let mut game_mutex_guard = game.lock().await;
                             let game = game_mutex_guard.deref_mut();
 
-                            let result = if let Some(player_index) = player_index {
-                                handle_game_command(game, player_index, command)
+                            let result = if let Some(player_id) = player_id {
+                                handle_game_command(game, player_id, command)
                             } else {
-                                let authentication_result = handle_authentication_command(game, &mut player_index, command);
+                                let authentication_result = handle_authentication_command(game, &mut player_id, command);
 
                                 if let Ok(AuthenticationCommandResult::Joined { key }) = &authentication_result {
                                     if let Err(e) = ws.send(ws::Message::Text(serde_json::to_string(&WebSocketNotification::SetPlayerKey {
@@ -133,8 +134,8 @@ pub async fn handler(
                                 }
 
                                 if authentication_result.is_ok() {
-                                    if let Err(e) = ws.send(ws::Message::Text(serde_json::to_string(&WebSocketNotification::SetPlayerIndex {
-                                        player_index,
+                                    if let Err(e) = ws.send(ws::Message::Text(serde_json::to_string(&WebSocketNotification::SetPlayerId {
+                                        player_id,
                                     }).unwrap().into())).await {
                                         tracing::debug!("Client disconnected abruptly: {e}");
                                     }

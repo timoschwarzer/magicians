@@ -10,9 +10,13 @@ use tokio::sync::Mutex;
 use tokio::sync::broadcast::Sender;
 use uuid::Uuid;
 
+pub type PlayerId = usize;
+
 #[derive(Serialize, Clone, Debug)]
 #[serde(rename_all = "camelCase")]
 pub struct Player {
+    /** Player ID */
+    id: usize,
     /** Player key; used when reconnecting to a game that is in progress */
     #[serde(skip)]
     key: String,
@@ -135,14 +139,16 @@ impl Game {
     pub fn add_player<S: Into<String>>(
         &mut self,
         name: S,
-    ) -> Result<(usize, String), GameLogicError> {
+    ) -> Result<(PlayerId, String), GameLogicError> {
         if self.has_started() {
             return Err(GameLogicError::GameAlreadyInProgress);
         }
 
+        let id = self.players.len();
         let key = self.generate_player_key();
 
         self.players.push(Player {
+            id,
             key: key.clone(),
             name: name.into(),
             prediction: None,
@@ -150,12 +156,16 @@ impl Game {
             ready_to_continue: false,
         });
 
-        Ok((self.players.len() - 1, key))
+        Ok((id, key))
     }
 
-    /// Returns the player index of a player with a given key, or None if none was found
-    pub fn get_player_index_by_key(&self, key: &str) -> Option<usize> {
-        self.players.iter().position(|p| p.key == key)
+    /// Returns the player id of a player with a given key, or None if none was found
+    pub fn get_player_id_by_key(&self, key: &str) -> Option<PlayerId> {
+        self.players.iter().find(|p| p.key == key).map(|p| p.id)
+    }
+
+    fn get_player_index_by_id(&self, id: PlayerId) -> Option<usize> {
+        self.players.iter().position(|p| p.id == id)
     }
 
     /// Returns the index of the player who gets to predict and play first
@@ -173,7 +183,7 @@ impl Game {
     /// Submit a prediction for a player
     pub fn submit_prediction(
         &mut self,
-        player_index: usize,
+        player_id: PlayerId,
         prediction: u8,
     ) -> Result<(), GameLogicError> {
         let GameState::Predicting {
@@ -186,6 +196,10 @@ impl Game {
         } = self.state
         else {
             return Err(GameLogicError::NotPossibleInCurrentGameState);
+        };
+
+        let Some(player_index) = self.get_player_index_by_id(player_id) else {
+            return Err(GameLogicError::InvalidInputNumber);
         };
 
         if player_index != current_player_index {
@@ -232,18 +246,50 @@ impl Game {
     /// Change the prediction of a player during the game phase
     pub fn change_prediction(
         &mut self,
-        player_index: usize,
+        player_id: PlayerId,
         prediction: u8,
     ) -> Result<(), GameLogicError> {
         if !matches!(self.state, GameState::Playing { .. }) {
             return Err(GameLogicError::NotPossibleInCurrentGameState);
         }
 
+        let Some(player_index) = self.get_player_index_by_id(player_id) else {
+            return Err(GameLogicError::InvalidInputNumber);
+        };
+
         let Some(player) = self.players.get_mut(player_index) else {
             return Err(GameLogicError::InvalidInputNumber);
         };
 
         player.prediction = Some(prediction);
+
+        Ok(())
+    }
+
+    /// Shift a player's position left (negative) or right (positive)
+    pub fn shift_player_position(
+        &mut self,
+        player_id: PlayerId,
+        shift: i8,
+    ) -> Result<(), GameLogicError> {
+        if !matches!(self.state, GameState::Setup { .. }) {
+            return Err(GameLogicError::NotPossibleInCurrentGameState);
+        }
+
+        let Some(player_index) = self.get_player_index_by_id(player_id) else {
+            return Err(GameLogicError::InvalidInputNumber);
+        };
+
+        let player_count = self.players.len();
+
+        if player_index >= player_count {
+            return Err(GameLogicError::InvalidInputNumber);
+        }
+
+        self.players.swap(
+            player_index,
+            (player_index as isize + shift as isize).rem_euclid(player_count as isize) as usize,
+        );
 
         Ok(())
     }
@@ -356,12 +402,16 @@ impl Game {
     /// Submit the win count for a player
     pub fn submit_win_count(
         &mut self,
-        player_index: usize,
+        player_id: PlayerId,
         win_count: u8,
     ) -> Result<(), GameLogicError> {
         if !matches!(self.state, GameState::DistributingPoints { .. }) {
             return Err(GameLogicError::NotPossibleInCurrentGameState);
         }
+
+        let Some(player_index) = self.get_player_index_by_id(player_id) else {
+            return Err(GameLogicError::InvalidInputNumber);
+        };
 
         let Some(player) = self.players.get_mut(player_index) else {
             return Err(GameLogicError::InvalidInputNumber);
@@ -390,7 +440,7 @@ impl Game {
     /// Mark a player as being ready or not ready
     pub fn signal_player_ready(
         &mut self,
-        player_index: usize,
+        player_id: PlayerId,
         ready: bool,
     ) -> Result<(), GameLogicError> {
         if !matches!(
@@ -399,6 +449,10 @@ impl Game {
         ) {
             return Err(GameLogicError::NotPossibleInCurrentGameState);
         }
+
+        let Some(player_index) = self.get_player_index_by_id(player_id) else {
+            return Err(GameLogicError::InvalidInputNumber);
+        };
 
         let Some(player) = self.players.get_mut(player_index) else {
             return Err(GameLogicError::InvalidInputNumber);

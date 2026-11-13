@@ -1,11 +1,11 @@
-use crate::game_logic::{CardColor, Game};
+use crate::game_logic::{CardColor, Game, PlayerId};
 use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Clone, Debug)]
 #[serde(tag = "type", rename_all_fields = "camelCase")]
 pub enum WebSocketNotification {
     CurrentGame { game: Game },
-    SetPlayerIndex { player_index: Option<usize> },
+    SetPlayerId { player_id: Option<PlayerId> },
     SetPlayerKey { key: String },
 }
 
@@ -19,4 +19,5 @@ pub enum WebSocketCommand {
     SubmitPrediction { prediction: u8 },
     ChangePrediction { prediction: u8 },
     SubmitWinCount { win_count: u8 },
+    ShiftPlayerPosition { shift: i8 },
 }

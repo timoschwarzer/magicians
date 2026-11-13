@@ -35,16 +35,16 @@
         <transition name="slide-y" mode="out-in">
           <div v-if="game.state.type === 'Setup'" key="Setup" class="p-2 h-full flex flex-col justify-center items-center gap-3">
             <div class="grid grid-cols-3 gap-6 text-2xl">
-              <div v-if="nextPlayer !== null" class="flex items-center justify-end gap-1 pr-4 border-r opacity-75">
+              <div v-if="previousPlayer !== null" class="flex items-center justify-end gap-1 pr-4 border-r opacity-75 cursor-pointer" @click="shiftPlayerPosition(-1)">
                 <UIcon name="i-lucide-arrow-left" />
-                {{ nextPlayer.name }}
+                {{ previousPlayer.name }}
               </div>
               <div v-else></div>
               <div class="text-center font-bold">
                 {{ player.name }}
               </div>
-              <div v-if="previousPlayer !== null" class="flex items-center justify-start gap-1 pl-4 border-l opacity-75">
-                {{ previousPlayer.name }}
+              <div v-if="nextPlayer !== null" class="flex items-center justify-start gap-1 pl-4 border-l opacity-75 cursor-pointer" @click="shiftPlayerPosition(1)">
+                {{ nextPlayer.name }}
                 <UIcon name="i-lucide-arrow-right" />
               </div>
               <div v-else></div>
@@ -224,7 +224,7 @@
   const route = useRoute()
   const gameId = computed(() => route.params.id as string)
   const game = ref<MG.Game | null>(null)
-  const playerIndex = ref<number | null>(null)
+  const playerId = ref<number | null>(null)
   const ws = shallowRef<WebSocket | null>(null)
   const gameNotFoundDialogOpen = ref(false)
   const wsReconnectTimeoutId = ref<number | null>(null)
@@ -235,6 +235,13 @@
   const showBeginningPlayerMessage = ref(false)
   const canShare = ref(typeof window.navigator.share === "function")
 
+  const playerIndex = computed(() => {
+    if (game.value === null || playerId.value === null) {
+      return null
+    }
+
+    return game.value.players.findIndex(p => p.id === playerId.value)
+  })
   const player = computed(() => {
     if (game.value === null || playerIndex.value === null) {
       return null
@@ -374,8 +381,8 @@
         case "CurrentGame":
           game.value = data.game
           break
-        case "SetPlayerIndex":
-          playerIndex.value = data.playerIndex
+        case "SetPlayerId":
+          playerId.value = data.playerId
           break
         case "SetPlayerKey":
           window.localStorage.setItem(`player-key-${gameId.value}`, data.key)
@@ -462,6 +469,13 @@
     } catch (error) {
       console.error("Failed to copy: ", error)
     }
+  }
+
+  function shiftPlayerPosition(shift: number) {
+    sendCommand({
+      type: "ShiftPlayerPosition",
+      shift,
+    })
   }
 
   watch(gameId, async () => {

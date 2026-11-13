@@ -3,14 +3,15 @@ export namespace MG {
         type: "CurrentGame",
         game: Game,
     } | {
-        type: "SetPlayerIndex",
-        playerIndex: number | null,
+        type: "SetPlayerId",
+        playerId: number | null,
     } | {
         type: "SetPlayerKey",
         key: string,
     }
 
     export type Player = {
+        id: number,
         name: string,
         prediction: number | null,
         points: number[],
@@ -74,5 +75,8 @@ export namespace MG {
     } | {
         type: "SubmitWinCount",
         winCount: number,
+    } | {
+        type: "ShiftPlayerPosition",
+        shift: number,
     }
 }
