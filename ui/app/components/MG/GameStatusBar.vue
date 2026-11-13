@@ -4,7 +4,15 @@
       Round <NumberFlow :value="game.state.round" />
     </div>
 
-    <div v-if="player !== null" class="p-2">
+    <UDrawer v-if="!!game" v-model:open="pointsChartModalOpen">
+      <template #content>
+        <div class="h-screen p-6">
+          <MGPointsChart class="h-full w-full" :players="game.players" />
+        </div>
+      </template>
+    </UDrawer>
+
+    <div v-if="player !== null" class="p-2 cursor-pointer" @click="pointsChartModalOpen = !pointsChartModalOpen">
       <MGPlayerView :player="player" />
     </div>
 
@@ -88,6 +96,7 @@
   const screenOrientation = useScreenOrientation()
 
   const fullscreenButtonVisible = ref(false)
+  const pointsChartModalOpen = ref(false)
   const wakeLockSentinel = shallowRef<WakeLockSentinel | null>(null)
   const trumpItems = ref([
     {label: "Blue", value: "Blue", chip: {color: "blue"}},

@@ -13,8 +13,7 @@ export namespace MG {
     export type Player = {
         name: string,
         prediction: number | null,
-        points: number,
-        pointsDelta: number | null,
+        points: number[],
         readyToContinue: boolean,
     }
 

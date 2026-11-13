@@ -21,9 +21,7 @@ pub struct Player {
     /** The player's current prediction, or None if we are not currently in a round */
     prediction: Option<u8>,
     /** The player's points */
-    points: i32,
-    /** Points gained (or lost when negative) in the last round */
-    points_delta: Option<i32>,
+    points: Vec<i32>,
     /** Whether this player is ready to continue */
     ready_to_continue: bool,
 }
@@ -145,8 +143,7 @@ impl Game {
             key: key.clone(),
             name: name.into(),
             prediction: None,
-            points: 0,
-            points_delta: None,
+            points: vec![10, 30, 50, -20],
             ready_to_continue: false,
         });
 
@@ -278,7 +275,12 @@ impl Game {
 
         macro_rules! require_one_player_ready {
             ($player_index:expr) => {
-                if !self.players.get($player_index).map(|p| p.ready_to_continue).unwrap_or(false) {
+                if !self
+                    .players
+                    .get($player_index)
+                    .map(|p| p.ready_to_continue)
+                    .unwrap_or(false)
+                {
                     return Ok(false);
                 }
             };
@@ -308,14 +310,20 @@ impl Game {
                     disallowed_prediction: None,
                 };
             }
-            GameState::Predicting { round, first_player_index, .. } => {
+            GameState::Predicting {
+                round,
+                first_player_index,
+                ..
+            } => {
                 require_all_players_ready!();
-                self.state = GameState::Playing { round, first_player_index };
+                self.state = GameState::Playing {
+                    round,
+                    first_player_index,
+                };
             }
             GameState::Playing { round, .. } => {
                 require_all_players_ready!();
                 self.trump_color = None;
-                self.players.iter_mut().for_each(|p| p.points_delta = None);
                 self.state = GameState::DistributingPoints { round };
             }
             GameState::DistributingPoints { round } => {
@@ -364,8 +372,9 @@ impl Game {
             win_count.abs_diff(player.prediction.unwrap_or(0)) as i32 * -10
         };
 
-        player.points_delta = Some(points_delta);
-        player.points += points_delta;
+        player
+            .points
+            .push(player.points.last().unwrap_or(&0) + points_delta);
 
         player.ready_to_continue = true;
         self.continue_if_ready()?;
@@ -433,6 +442,10 @@ impl ApplicationState {
         .await
         .expect("Error executing cleanup task");
 
-        tracing::info!("Purged games: {}, active games: {}", game_count_before - game_count_after, game_count_after);
+        tracing::info!(
+            "Purged games: {}, active games: {}",
+            game_count_before - game_count_after,
+            game_count_after
+        );
     }
 }

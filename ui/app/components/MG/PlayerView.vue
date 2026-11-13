@@ -1,7 +1,7 @@
 <template>
   <div class="flex gap-2 items-center">
     <div>{{ player.name }}</div>
-    <MGPointsView :points="player.points" />
+    <MGPointsView :points="player.points.at(-1) ?? 0" />
   </div>
 </template>
 
