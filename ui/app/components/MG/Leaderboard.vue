@@ -5,6 +5,9 @@
         <div v-if="giveCardsIndex === player.index" class="col-start-1 flex items-center text-xl pr-3">
           <UIcon name="i-tabler-cards" />
         </div>
+        <div v-if="startingIndex === player.index" class="col-start-1 flex items-center text-xl pr-3">
+          <UIcon name="i-lucide-play" />
+        </div>
         <div class="col-start-2 underline-offset-2 decoration-1 pr-3" :class="{'underline': highlightIndex === player.index}">{{ player.name }}</div>
         <MGPointsView class="col-start-3" :points="player.points.at(-1) ?? 0" />
         <div
@@ -27,6 +30,7 @@
     game: MG.Game,
     highlightIndex?: number,
     giveCardsIndex?: number,
+    startingIndex?: number,
   }>()
 
   const sortedPlayers = computed(() => {

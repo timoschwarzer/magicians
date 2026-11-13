@@ -151,7 +151,12 @@
           <div v-else-if="game.state.type === 'Idle'" key="Idle" class="grid h-full auto-cols-fr">
             <div class="p-2 relative flex flex-col justify-center items-center gap-3 overflow-y-auto">
               <h2 class="text-3xl">Round {{ game.state.round }}</h2>
-              <MGLeaderboard :game="game" :highlight-index="playerIndex" :give-cards-index="game.state.lastPlayerIndex" />
+              <MGLeaderboard
+                :game="game"
+                :highlight-index="playerIndex"
+                :give-cards-index="game.state.lastPlayerIndex"
+                :starting-index="game.state.firstPlayerIndex"
+              />
             </div>
             <div v-if="playerIndex === game.state.lastPlayerIndex" class="col-2 p-2 relative flex flex-col justify-center items-center gap-3 overflow-y-auto">
               <div>

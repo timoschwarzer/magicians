@@ -2,8 +2,8 @@
   <div>
     <div class="grid auto-cols-auto">
       <template v-for="(player, index) in game.players">
-        <div class="col-start-1 flex items-center text-xl opacity-0 transition-opacity pr-3" :class="{'opacity-100': highlightIndex === index}">
-          <UIcon name="i-lucide-arrow-right" />
+        <div class="col-start-1 flex items-center text-xl opacity-0 transition-opacity pr-3" :class="{'opacity-100': prefixIndex === index}">
+          <UIcon :name="prefixIcon" />
         </div>
         <div class="col-start-2 underline-offset-2 decoration-1 pr-3">{{ player.name }}</div>
         <div class="col-start-3 flex items-center pr-1">
@@ -31,8 +31,23 @@
     highlightIndex?: number,
   }>()
 
+  const prefixIcon = computed(() => {
+    return props.highlightIndex !== undefined
+      ? "i-lucide-arrow-right"
+      : "i-lucide-play"
+  })
+  const prefixIndex = computed(() => {
+    if (props.highlightIndex !== undefined) {
+      return props.highlightIndex
+    }
+
+    if (props.game.state.type === "Playing") {
+      return props.game.state.firstPlayerIndex
+    }
+
+    return -1
+  })
   const predictionsSum = computed(() => props.game.players.reduce((acc, player) => acc + (player.prediction ?? 0), 0))
-  const anyPlayerPredicted = computed(() => props.game.players.some(player => player.prediction !== null))
 </script>
 
 <style scoped>
