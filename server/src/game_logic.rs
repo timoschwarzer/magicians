@@ -86,6 +86,8 @@ pub struct Game {
     trump_color: Option<CardColor>,
     /// Current game state
     state: GameState,
+    /// Seed for randomness
+    seed: u8,
 
     #[serde(skip)]
     broadcast_sender: Sender<WebSocketNotification>,
@@ -116,6 +118,7 @@ impl Game {
             broadcast_sender: Sender::new(16),
             trump_color: None,
             state: GameState::Setup,
+            seed: rand::random(),
         }
     }
 
@@ -157,12 +160,14 @@ impl Game {
 
     /// Returns the index of the player who gets to predict and play first
     fn get_first_player_index(&self, round: NonZeroU8) -> usize {
-        (round.get() as usize - 1) % self.players.len()
+        (round.get() as usize - 1).wrapping_add(self.seed as usize) % self.players.len()
     }
 
     /// Returns the index of the player who gets to predict last
     fn get_last_player_index(&self, round: NonZeroU8) -> usize {
-        (round.get() as isize - 2).rem_euclid(self.players.len() as isize) as usize
+        (round.get() as isize - 2)
+            .wrapping_add(self.seed as isize)
+            .rem_euclid(self.players.len() as isize) as usize
     }
 
     /// Submit a prediction for a player
