@@ -1,9 +1,14 @@
 <template>
   <div class="chart-container" ref="container">
-    <LineChart
+    <UChart
       :data="chartData"
       :categories="chartCategories"
       :height="containerHeight"
+      curve="monotone"
+      index="round"
+      x-label="Round"
+      y-label="Points"
+      points
     />
   </div>
 </template>
@@ -35,8 +40,12 @@
     for (let round = 0; round < rounds; round++) {
       const dataPoint: DataPoint = {round}
 
-      for (let playerIndex = 0; playerIndex < props.players.length; playerIndex++) {
-        dataPoint[String(playerIndex)] = props.players[playerIndex]!.points[round]!
+      for (const player of props.players) {
+        const points = player.points[round]
+
+        if (points !== undefined) {
+          dataPoint[String(player.id)] = points
+        }
       }
 
       dataPoints.push(dataPoint)
@@ -46,15 +55,10 @@
   })
 
   const chartCategories = computed(() => {
-    const categories: Record<string, BulletLegendItemInterface> = {}
-
-    for (let playerIndex = 0; playerIndex < props.players.length; playerIndex++) {
-      categories[String(playerIndex)] = {
-        name: props.players[playerIndex]!.name,
-      }
-    }
-
-    return categories
+    return props.players.map(p => ({
+      key: String(p.id),
+      label: p.name,
+    }))
   })
 </script>
 
