@@ -286,10 +286,12 @@ impl Game {
             return Err(GameLogicError::InvalidInputNumber);
         }
 
-        self.players.swap(
-            player_index,
-            (player_index as isize + shift as isize).rem_euclid(player_count as isize) as usize,
-        );
+        let swapping_with_player_index =
+            (player_index as isize + shift as isize).rem_euclid(player_count as isize) as usize;
+        self.players[player_index].ready_to_continue = false;
+        self.players[swapping_with_player_index].ready_to_continue = false;
+
+        self.players.swap(player_index, swapping_with_player_index);
 
         Ok(())
     }
