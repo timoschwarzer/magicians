@@ -46,7 +46,7 @@
               <div v-else></div>
             </div>
 
-            <div class="mb-4">
+            <div v-if="game.players.length >= 3" class="mb-4">
               Tap arrows change order
             </div>
 
