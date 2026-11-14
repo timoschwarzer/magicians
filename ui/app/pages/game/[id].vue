@@ -11,10 +11,6 @@
           >
             Join
           </UButton>
-
-          <div class="mt-4">
-            Join in clockwise order.
-          </div>
         </div>
       </template>
       <template v-else-if="game !== null && playerIndex !== null && player !== null">
@@ -48,6 +44,10 @@
                 <UIcon name="i-lucide-arrow-right" />
               </div>
               <div v-else></div>
+            </div>
+
+            <div class="mb-4">
+              Tap arrows change order
             </div>
 
             <div class="flex gap-1">
